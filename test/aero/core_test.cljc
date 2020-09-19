@@ -212,11 +212,11 @@
          (:bar
            (read-config
              (string-reader
-               "{:foo 10 :bar #{#ref [:foo]}}"))))))
+               "{:foo 10 :bar #{#aero/ref [:foo]}}"))))))
 
 (deftest or-incomplete-child
   (let [config-str "{:x \"foo\"
-                   :y #or [#ref [:x] \"bar\"]
+                   :y #aero/or [#aero/ref [:x] \"bar\"]
                    :junk0 \"0\"
                    :junk1 \"1\"
                    :junk2 \"2\"
@@ -230,7 +230,7 @@
     (is (= "foo" (:x (read-config config))))))
 
 (deftest or-dangling-ref
-  (let [config-str "{:y #or [#ref [:x] \"bar\"]}"
+  (let [config-str "{:y #aero/or [#aero/ref [:x] \"bar\"]}"
         config (string-reader config-str)]
     (is (= "bar" (:y (read-config config))))))
 

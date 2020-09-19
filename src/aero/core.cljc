@@ -45,43 +45,43 @@
   #?(:clj (System/getenv (str s)))
   #?(:cljs (gobj/get js/process.env s)))
 
-(defmethod reader 'env
+(defmethod reader 'aero/env
   [opts tag value]
   (get-env value))
 
-(defmethod reader 'envf
+(defmethod reader 'aero/envf
   [opts tag value]
   (let [[fmt & args] value]
     (apply #?(:clj format :cljs gstring/format) fmt
            (map #(str (get-env (str %))) args))))
 
-(defmethod reader 'prop
+(defmethod reader 'aero/prop
    [opts tag value]
    #?(:clj (System/getProperty (str value))
       :cljs nil))
 
-(defmethod reader 'long
+(defmethod reader 'aero/long
   [opts tag value]
   #?(:clj (Long/parseLong (str value)))
   #?(:cljs (js/parseInt (str value))))
 
-(defmethod reader 'double
+(defmethod reader 'aero/double
   [opts tag value]
   #?(:clj (Double/parseDouble (str value)))
   #?(:cljs (js/parseFloat (str value))))
 
-(defmethod reader 'keyword
+(defmethod reader 'aero/keyword
   [opts tag value]
   (if (keyword? value)
     value
     (keyword (str value))))
 
-(defmethod reader 'boolean
+(defmethod reader 'aero/boolean
   [opts tag value]
   #?(:clj (Boolean/parseBoolean (str value)))
   #?(:cljs (= "true" (.toLowerCase (str value)))))
 
-(defmethod reader 'include
+(defmethod reader 'aero/include
   [{:keys [resolver source] :as opts} tag value]
   (read-config
     (if (map? resolver)
@@ -89,15 +89,15 @@
       (resolver source value))
     opts))
 
-(defmethod reader 'join
+(defmethod reader 'aero/join
   [opts tag value]
   (apply str value))
 
-(defmethod reader 'read-edn
+(defmethod reader 'aero/read-edn
   [opts tag value]
   (some-> value str edn/read-string))
 
-(defmethod reader 'merge
+(defmethod reader 'aero/merge
   [opts tag values]
   (apply merge values))
 
@@ -168,7 +168,7 @@
         (tagged-literal (:tag v) (ref-meta-to-tagged-literal (:form v)))
 
         (contains? (meta v) :ref)
-        (tagged-literal 'ref v)
+        (tagged-literal 'aero/ref v)
 
         :else
         v))
@@ -225,7 +225,7 @@
       (update expansion ::value (rewrap tl))
       (update expansion ::value #(reader opts (:tag tl) %)))))
 
-(defmethod eval-tagged-literal 'ref
+(defmethod eval-tagged-literal 'aero/ref
   [tl opts env ks]
   (let [{:keys [:aero.core/incomplete? :aero.core/env :aero.core/value
                 :aero.core/incomplete]
@@ -240,22 +240,22 @@
                                    ::value tl})))
       (assoc expansion ::value (get env value)))))
 
-(defmethod eval-tagged-literal 'profile 
+(defmethod eval-tagged-literal 'aero/profile
   [tl opts env ks]
   (expand-case (:profile opts) tl opts env ks))
 
-(defmethod eval-tagged-literal 'hostname
+(defmethod eval-tagged-literal 'aero/hostname
   [tl {:keys [hostname] :as opts} env ks]
   (expand-case (or hostname #?(:clj (env "HOSTNAME")
                                :cljs (os/hostname)))
                tl opts env ks))
 
-(defmethod eval-tagged-literal 'user
+(defmethod eval-tagged-literal 'aero/user
   [tl {:keys [user] :as opts} env ks]
   (expand-case (or user (get-env "USER"))
                tl opts env ks))
 
-(defmethod eval-tagged-literal 'or
+(defmethod eval-tagged-literal 'aero/or
   [tl opts env ks]
   (let [{:keys [:aero.core/incomplete? :aero.core/value] :as expansion}
         (expand-scalar-repeatedly (:form tl) opts env ks)]
@@ -376,7 +376,7 @@
               expansion
 
               (and (> attempts 0)
-                   (= (-> incomplete ::value :tag) 'ref))
+                   (= (-> incomplete ::value :tag) 'aero/ref))
               (do
                 (binding [*out* #?(:clj *err*
                                    :cljs *out*)]
